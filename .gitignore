@@ -1,0 +1,55 @@
+# Local environments and Python caches
+.venv/
+venv/
+.tmp/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local editor and OS files
+.vscode/
+.idea/
+.DS_Store
+
+# Datasets, weights, and generated artifacts
+data/
+checkpoints/
+Wan2.2/
+experiments/
+videos/
+outputs/
+resume_state/
+debug/
+logs/
+local_previews/
+vis/
+backup/
+
+# Heavy model/data file formats
+*.safetensors
+*.pth
+*.pt
+*.ckpt
+*.bin
+*.pkl
+*.onnx
+*.npy
+*.npz
+*.mp4
+*.mov
+*.avi
+*.log
+
+# Minimal public smoke-test data
+!data/
+!data/README.md
+!data/train_toy/
+!data/train_toy/**
+!data/test_demo/
+!data/test_demo/**
