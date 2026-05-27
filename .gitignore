@@ -30,6 +30,8 @@ logs/
 local_previews/
 vis/
 backup/
+ckpts/
+
 
 # Heavy model/data file formats
 *.safetensors
@@ -47,9 +49,8 @@ backup/
 *.log
 
 # Minimal public smoke-test data
-!data/
+data/*
 !data/README.md
-!data/train_toy/
-!data/train_toy/**
-!data/test_demo/
-!data/test_demo/**
+!data/train/
+!data/test/
+!data/ablation/

@@ -167,6 +167,9 @@ bash train_stage1.sh
 
 Stage 2: Conduct restorative flow matching. (`data/ablation/stage2.mp4`)
 
+To apply an SVI/Helios-style anti-drifting strategy, you can directly use the arguments `--enable_image_enhancement` and `--image_enhancement_prob 0.95` to explicitly augment the motion latent. While this approach further improves stability, it fundamentally introduces cross-chunk flickering.
+
+
 ```bash
 bash train_stage2.sh
 ```
@@ -193,8 +196,7 @@ bash train_stage2.sh
 ```text
 EverAnimate/
 |-- diffsynth/              # Core model, pipeline, diffusion, and utility code
-|-- examples/wanvideo/      # EverAnimate SVI training examples
-|-- scripts/                # Download and inference utilities
+|-- scripts/                # Download, training, and inference utilities
 |-- data/train/             # Minimal toy training sample
 |-- data/test/              # Minimal inference demo sample
 |-- ckpts/Wan-AI/           # Wan base model files used by DiffSynth

@@ -8,7 +8,7 @@ export TOKENIZERS_PARALLELISM=false
 
 mkdir -p "${OUTPUT_PATH:-experiments/stage2}" logs
 
-accelerate launch --num_processes "${NUM_PROCESSES:-1}" examples/wanvideo/model_training/train_svi.py \
+accelerate launch --num_processes "${NUM_PROCESSES:-1}" scripts/everanimate_train.py \
   --dataset_base_path "${DATASET_BASE_PATH:-data/train}" \
   --dataset_metadata_path "${DATASET_METADATA_PATH:-data/train/metadata.csv}" \
   --data_file_keys "video,animate_pose_video,animate_face_video" \
