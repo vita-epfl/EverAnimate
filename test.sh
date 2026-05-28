@@ -25,8 +25,8 @@ python scripts/everanimate_inference.py \
   --num_inference_steps "${NUM_INFERENCE_STEPS:-20}" \
   --use_pingpong \
   --num_overlap_frame 4 \
-  --height 480 \
-  --width 832 \
+  --height "${HEIGHT:-480}" \
+  --width "${WIDTH:-832}" \
   --frames_per_clip 77 \
   --sigma_shift 5 \
   --use_image_anchor \

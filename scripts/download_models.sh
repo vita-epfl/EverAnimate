@@ -41,11 +41,13 @@ cleanup_hf_locks
 hf download epfl-vita/everanimate \
   --repo-type model \
   --include "ckpts/v1-lora32/*_480p.safetensors" \
+  --include "ckpts/v1-lora32/stage3_720p_beta.safetensors" \
+  --include "ckpts/everanimate-v1-lora32/stage3_720p_beta.safetensors" \
   --local-dir .
 
 mkdir -p ckpts/everanimate-v1-lora32
 if [[ -d ckpts/v1-lora32 ]]; then
-  find ckpts/v1-lora32 -maxdepth 1 -type f -name "*_480p.safetensors" -exec mv -f {} ckpts/everanimate-v1-lora32/ \;
+  find ckpts/v1-lora32 -maxdepth 1 -type f -name "*.safetensors" -exec mv -f {} ckpts/everanimate-v1-lora32/ \;
   rmdir ckpts/v1-lora32 2>/dev/null || true
 fi
 

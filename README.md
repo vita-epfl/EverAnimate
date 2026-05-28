@@ -39,18 +39,14 @@
 
 ---
 
-
-
-
 Contact: <a href="https://wymancv.github.io/wuyang.github.io/"><strong>Wuyang Li</strong></a>   
 Email: wymanbest@outlook.com
 
 ## ✨ Highlights
 
-- **GPU-friendly training.** Rank-32 LoRA post-training on Wan2.2-Animate reaches strong results with thousand-level iterations on 4 GPUs.
+- **GPU-friendly training.** Rank-32 LoRA post-training on Wan2.2-Animate reaches strong results with only thousands of iterations on 4 GPUs.
 - **Long-horizon animation.** EverAnimate supports minute-scale human animation with controlled identity and motion consistency.
 - **Fully open source.** Code, training/inference scripts, LoRA checkpoints, demo data, and ablation videos are released for reproducible research.
-
 
 **Note.** EverAnimate builds on the long-video generation framework of SVI 2.0 Pro. Unlike the version described in our paper, which uses a rank of 128, we reproduce and release a lighter, more user-friendly LoRA (rank 32) version focused on long-horizon human animation. It comes with ready-to-run training and inference scripts and can be used on 80GB GPUs without DeepSpeed ZeRO-2 or ZeRO-3.
 
@@ -89,8 +85,8 @@ This downloads:
 
 - Wan2.2-Animate diffusion, T5 encoder, VAE, and CLIP model files
 - The `google/umt5-xxl` tokenizer required by the DiffSynth Wan pipeline
-- The Wav2Vec processor files used by the training pipeline defaults
-- EverAnimate 480p LoRA checkpoints under `ckpts/everanimate-v1-lora32`
+- The Wav2Vec processor files used by the default training pipeline
+- EverAnimate 480p LoRA checkpoints and the 720p beta checkpoint under `ckpts/everanimate-v1-lora32`
 - Demo assets from [`data`](https://huggingface.co/epfl-vita/everanimate/tree/main/data), including the minimal training sample, inference demo, and Stage-1/Stage-2 ablation videos
 
 After downloading, the default scripts use the local `ckpts/` folder for both base models and EverAnimate LoRA checkpoints. For offline runs, set:
@@ -115,7 +111,8 @@ ckpts/
 |   `-- wav2vec2-large-xlsr-53-english/
 |-- everanimate-v1-lora32/
 |   |-- stage1_480p.safetensors
-|   `-- stage2_480p.safetensors
+|   |-- stage2_480p.safetensors
+|   `-- stage3_720p_beta.safetensors  # Beta, tested only at small scale
 data/
 |-- train/       # Minimal training sample
 |-- test/        # Inference demo
@@ -131,18 +128,30 @@ EverAnimate follows the official DiffSynth-Studio model-loading convention:
 
 ## 🎬 Inference
 
-Run the bundled test demo:
+Run the bundled test 480p demo:
 
 ```bash
 bash test.sh
 ```
 
-During inference, EverAnimate automatically saves the latest chunk latents so long videos can be resumed from the saved state.
+During inference, EverAnimate automatically saves the latest chunk latents so long videos can be resumed from the saved state. We use 4 overlap frames between two chunks, and use the last latent (without deocoding) of previous chunk to guide the current chunk generation.
 
 Run a longer demo with 20 chunks:
 
 ```bash
 NUM_CLIPS=20 OUTPUT_PATH=outputs/test/demo_000001_20chunks.mp4 bash test.sh
+```
+
+Run the 720p beta checkpoint:
+
+> The 720p checkpoint is a beta version and has only been tested at small scale.
+
+```bash
+LORA_PATH=ckpts/everanimate-v1-lora32/stage3_720p_beta.safetensors \
+WIDTH=1280 \
+HEIGHT=720 \
+OUTPUT_PATH=outputs/test/demo_000001_720p_beta.mp4 \
+bash test.sh
 ```
 
 Use custom inputs:
@@ -157,18 +166,17 @@ bash test.sh
 
 ## 🚀 Training
 
-The repository includes a minimal toy training sample under `data/train/`. Note that you need the chunk longer than 160 frames for training.
+The repository includes a minimal toy training sample under `data/train/`. Training videos should be longer than 160 frames.
 
-Stage 1: Conduct video extension with last latent and memory without anti-drifting. (`data/ablation/stage1.mp4`)
+Stage 1 performs video extension with the last latent and memory, without anti-drifting. (`data/ablation/stage1.mp4`)
 
 ```bash
 bash train_stage1.sh
 ```
 
-Stage 2: Conduct restorative flow matching. (`data/ablation/stage2.mp4`)
+Stage 2 conducts restorative flow matching. (`data/ablation/stage2.mp4`)
 
-To apply an SVI/Helios-style anti-drifting strategy, you can directly use the arguments `--enable_image_enhancement` and `--image_enhancement_prob 0.95` to explicitly augment the motion latent. While this approach further improves stability, it fundamentally introduces cross-chunk flickering.
-
+To apply an SVI/Helios-style anti-drifting strategy, pass `--enable_image_enhancement` and `--image_enhancement_prob 0.95` to explicitly augment the motion latents. While this approach can further improve stability, it may introduce cross-chunk flickering.
 
 ```bash
 bash train_stage2.sh
@@ -191,6 +199,22 @@ OUTPUT_PATH=experiments/stage2_custom \
 bash train_stage2.sh
 ```
 
+720p beta fine-tuning:
+
+> `train_stage3.sh` uses 1280x720-scale training through `MAX_PIXELS=921600`. This path is still beta and has only been tested at small scale. Training without DeepSpeed requires more than 80GB of GPU memory.
+
+```bash
+bash train_stage3.sh
+```
+
+Continue fine-tuning from the 720p beta checkpoint:
+
+```bash
+LORA_CHECKPOINT=ckpts/everanimate-v1-lora32/stage3_720p_beta.safetensors \
+OUTPUT_PATH=experiments/stage3_720p_continue \
+bash train_stage3.sh
+```
+
 ## 📁 Repository Layout
 
 ```text
@@ -200,21 +224,18 @@ EverAnimate/
 |-- data/train/             # Minimal toy training sample
 |-- data/test/              # Minimal inference demo sample
 |-- ckpts/Wan-AI/           # Wan base model files used by DiffSynth
-|-- ckpts/everanimate-v1-lora32/ # EverAnimate 480p LoRA checkpoints
+|-- ckpts/everanimate-v1-lora32/ # EverAnimate 480p LoRA and 720p beta checkpoints
 |-- train_stage1.sh
 |-- train_stage2.sh
+|-- train_stage3.sh
 `-- test.sh
 ```
 
-## 🗓️ TODO
-
-- Release the 720p LoRA checkpoints after fine-tuning and testing are complete.
-
 ## ❓ FAQ
 
-**Q: Why is the released model 480p?**
+**Q: What input resolution is supported?**
 
-Due to compute constraints, the current public release provides 480p LoRA checkpoints. The 720p model is still under fine-tuning and testing, and we plan to release it in a future update. The current 480p model can also support 720p inference to some extent.
+Due to compute constraints, the stable public release focuses on 480p LoRA checkpoints. We also provide a 720p beta checkpoint, but it has only been tested at small scale. A more thoroughly fine-tuned and evaluated 720p model is planned for a future update, and the current 480p model can also support 720p inference to some extent.
 
 **Q: How are anchor frames used?**
 
@@ -228,7 +249,7 @@ In some samples, we observe a visible transition between the first and second ch
 
 ## 📝 Abstract
 
-**EverAnimate** is an efficient post-training method for long-horizon animated video generation that preserves visual quality and character identity. Long-form animation remains challenging because highly dynamic human motion must be synthesized against relatively static environments, making chunk-based generation prone to accumulated drift: low-level quality drift, such as progressive degradation of static backgrounds, and high-level semantic drift, such as inconsistent character identity and view-dependent attributes. EverAnimate restores drifted flow trajectories by anchoring generation to a persistent latent context memory. It consists of two complementary mechanisms: **Persistent Latent Propagation**, which maintains context memory across chunks to propagate identity and motion in latent space while mitigating temporal forgetting, and **Restorative Flow Matching**, which introduces an implicit restoration objective during sampling through velocity adjustment to improve within-chunk fidelity.With only lightweight LoRA tuning, EverAnimate outperforms state-of-the-art long-animation methods in both short- and long-horizon settings: at 10 seconds, it improves PSNR/SSIM by 8%/7% and reduces LPIPS/FID by 22%/11%; at 90 seconds, the gains increase to 15%/15% and 32%/27%, respectively.
+**EverAnimate** is an efficient post-training method for long-horizon animated video generation that preserves visual quality and character identity. Long-form animation remains challenging because highly dynamic human motion must be synthesized against relatively static environments, making chunk-based generation prone to accumulated drift: low-level quality drift, such as progressive degradation of static backgrounds, and high-level semantic drift, such as inconsistent character identity and view-dependent attributes. EverAnimate restores drifted flow trajectories by anchoring generation to a persistent latent context memory. It consists of two complementary mechanisms: **Persistent Latent Propagation**, which maintains context memory across chunks to propagate identity and motion in latent space while mitigating temporal forgetting, and **Restorative Flow Matching**, which introduces an implicit restoration objective during sampling through velocity adjustment to improve within-chunk fidelity. With only lightweight LoRA tuning, EverAnimate outperforms state-of-the-art long-animation methods in both short- and long-horizon settings: at 10 seconds, it improves PSNR/SSIM by 8%/7% and reduces LPIPS/FID by 22%/11%; at 90 seconds, the gains increase to 15%/15% and 32%/27%, respectively.
 
 ## 🧩 Method Overview
 
@@ -240,7 +261,7 @@ In some samples, we observe a visible transition between the first and second ch
 
 ## 🙏 Acknowledgements
 
-This work is developed based on the following projects:
+This work builds on the following projects:
 
 - [DiffSynth-Studio](https://github.com/modelscope/DiffSynth-Studio)
 - [Wan-Animate: Unified Character Animation and Replacement with Holistic Replication](https://arxiv.org/abs/2509.14055)
